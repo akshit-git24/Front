@@ -1,33 +1,93 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/footer';
 import { useRouter } from 'next/navigation';
 
+/* =======================
+   Types
+======================= */
+
+type ActiveTab = 'details' | 'allotment' | 'rooms';
+
+interface HostelProfile {
+  name: string;
+  hostel_id: string;
+  location: string;
+  capacity: number;
+  contact_number: string;
+  university: string;
+}
+
+interface Room {
+  id: string;
+  room_number: string;
+  room_type: string;
+  capacity: number;
+  available_capacity: number;
+  floor: number;
+}
+
+interface Student {
+  student_id: string;
+  name: string;
+  contact_number: string;
+  is_disabled: boolean;
+  roommate_preference?: string | null;
+  remarks?: string | null;
+  documents?: string | null;
+}
+
+interface RoomWithStudents extends Room {
+  students: Student[];
+}
+
+interface NewRoomPayload {
+  room_number: string;
+  room_type: string;
+  capacity: number;
+  floor: number;
+}
+
+/* =======================
+   Component
+======================= */
+
 const HostelDashboard: React.FC = () => {
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'details' | 'allotment' | 'rooms'>('details');
 
-  // Room State
-  const [rooms, setRooms] = useState<any[]>([]);
-  const [showAddRoom, setShowAddRoom] = useState(false);
-  const [newRoom, setNewRoom] = useState({ room_number: '', room_type: 'double', capacity: 2, floor: 1 });
+  const [profile, setProfile] = useState<HostelProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('details');
 
-  // Allotment State
-  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [showAllocateModal, setShowAllocateModal] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState('');
+  // Rooms
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [showAddRoom, setShowAddRoom] = useState<boolean>(false);
+  const [newRoom, setNewRoom] = useState<NewRoomPayload>({
+    room_number: '',
+    room_type: 'double',
+    capacity: 2,
+    floor: 1
+  });
 
-  // Room Management State
-  const [allotments, setAllotments] = useState<any[]>([]);
-  const [selectedRoomDetails, setSelectedRoomDetails] = useState<any>(null);
-  const [showRoomModal, setShowRoomModal] = useState(false);
-  const [showMoveModal, setShowMoveModal] = useState(false);
-  const [studentToMove, setStudentToMove] = useState<any>(null);
-  const [moveTargetRoomId, setMoveTargetRoomId] = useState('');
+  // Allotment
+  const [pendingStudents, setPendingStudents] = useState<Student[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showAllocateModal, setShowAllocateModal] = useState<boolean>(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+
+  // Room management
+  const [allotments, setAllotments] = useState<RoomWithStudents[]>([]);
+  const [selectedRoomDetails, setSelectedRoomDetails] = useState<RoomWithStudents | null>(null);
+  const [showRoomModal, setShowRoomModal] = useState<boolean>(false);
+  const [showMoveModal, setShowMoveModal] = useState<boolean>(false);
+  const [studentToMove, setStudentToMove] = useState<Student | null>(null);
+  const [moveTargetRoomId, setMoveTargetRoomId] = useState<string>('');
+
+  /* =======================
+     Effects
+  ======================= */
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -38,20 +98,21 @@ const HostelDashboard: React.FC = () => {
 
     const fetchProfile = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8010';
         const res = await fetch(`${baseUrl}/hostel/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data);
-        } else {
+        if (!res.ok) {
           localStorage.removeItem('access_token');
           router.push('/hostel/login');
+          return;
         }
-      } catch (error) {
-        console.error(error);
+
+        const data: HostelProfile = await res.json();
+        setProfile(data);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -61,98 +122,102 @@ const HostelDashboard: React.FC = () => {
   }, [router]);
 
   useEffect(() => {
-    if (activeTab === 'details') {
-      fetchRooms();
-    } else if (activeTab === 'allotment') {
+    if (activeTab === 'details') fetchRooms();
+    if (activeTab === 'allotment') {
       fetchPendingStudents();
       fetchRooms();
-    } else if (activeTab === 'rooms') {
-      fetchRooms(); // Need basic room list for dropdowns
+    }
+    if (activeTab === 'rooms') {
+      fetchRooms();
       fetchAllotments();
     }
   }, [activeTab]);
 
+  /* =======================
+     API helpers
+  ======================= */
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8010';
+
+  const authHeader = () => ({
+    Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}`
+  });
+
   const fetchRooms = async () => {
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
     try {
-      const res = await fetch(`${baseUrl}/hostel/rooms`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`${baseUrl}/hostel/rooms`, { headers: authHeader() });
       if (res.ok) {
-        const data = await res.json();
+        const data: Room[] = await res.json();
         setRooms(data);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchPendingStudents = async () => {
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
     try {
-      const res = await fetch(`${baseUrl}/hostel/students/pending`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`${baseUrl}/hostel/students/pending`, { headers: authHeader() });
       if (res.ok) {
-        const data = await res.json();
+        const data: Student[] = await res.json();
         setPendingStudents(data);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchAllotments = async () => {
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
     try {
-      const res = await fetch(`${baseUrl}/hostel/rooms/allotments`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`${baseUrl}/hostel/rooms/allotments`, { headers: authHeader() });
       if (res.ok) {
-        const data = await res.json();
+        const data: RoomWithStudents[] = await res.json();
         setAllotments(data);
 
-        // Update selected room details if modal is open
         if (selectedRoomDetails) {
-          const updated = data.find((r: any) => r.id === selectedRoomDetails.id);
+          const updated = data.find(r => r.id === selectedRoomDetails.id);
           if (updated) setSelectedRoomDetails(updated);
         }
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleAddRoom = async (e: React.FormEvent) => {
+  /* =======================
+     Actions
+  ======================= */
+
+  const handleAddRoom = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
 
     const formData = new FormData();
-    formData.append('room_number', newRoom.room_number);
-    formData.append('room_type', newRoom.room_type);
-    formData.append('capacity', newRoom.capacity.toString());
-    formData.append('floor', newRoom.floor.toString());
+    Object.entries(newRoom).forEach(([k, v]) => formData.append(k, String(v)));
 
     try {
       const res = await fetch(`${baseUrl}/hostel/room/create`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: authHeader(),
         body: formData
       });
-      if (res.ok) {
-        alert('Room added successfully');
-        setShowAddRoom(false);
-        setNewRoom({ room_number: '', room_type: 'double', capacity: 2, floor: 1 });
-        fetchRooms();
-      } else {
-        const err = await res.json();
-        alert('Failed to add room: ' + err.message);
+
+      if (!res.ok) {
+        const err: { message: string } = await res.json();
+        alert(`Failed to add room: ${err.message}`);
+        return;
       }
-    } catch (e) { console.error(e); }
+
+      alert('Room added successfully');
+      setShowAddRoom(false);
+      setNewRoom({ room_number: '', room_type: 'double', capacity: 2, floor: 1 });
+      fetchRooms();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAllocate = async () => {
     if (!selectedStudent || !selectedRoomId) return;
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
 
     const formData = new FormData();
     formData.append('student_id', selectedStudent.student_id);
@@ -161,28 +226,29 @@ const HostelDashboard: React.FC = () => {
     try {
       const res = await fetch(`${baseUrl}/hostel/allocate_room`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: authHeader(),
         body: formData
       });
-      if (res.ok) {
-        alert('Room allocated!');
-        setShowAllocateModal(false);
-        setSelectedStudent(null);
-        setSelectedRoomId('');
-        fetchPendingStudents();
-        fetchRooms();
-      } else {
-        const err = await res.json();
-        alert('Allocation failed: ' + err.message);
+
+      if (!res.ok) {
+        const err: { message: string } = await res.json();
+        alert(`Allocation failed: ${err.message}`);
+        return;
       }
-    } catch (e) { console.error(e); }
+
+      alert('Room allocated!');
+      setShowAllocateModal(false);
+      setSelectedStudent(null);
+      setSelectedRoomId('');
+      fetchPendingStudents();
+      fetchRooms();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleDeallocate = async (studentId: any) => {
-    if (!confirm("Are you sure you want to remove this student from the room?")) return;
-
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
+  const handleDeallocate = async (studentId: string) => {
+    if (!confirm('Are you sure you want to remove this student from the room?')) return;
 
     const formData = new FormData();
     formData.append('student_id', studentId);
@@ -190,24 +256,25 @@ const HostelDashboard: React.FC = () => {
     try {
       const res = await fetch(`${baseUrl}/hostel/deallocate`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: authHeader(),
         body: formData
       });
-      if (res.ok) {
-        alert("Student deallocated.");
-        fetchAllotments();
-      } else {
-        const err = await res.json();
-        alert("Error: " + err.message);
+
+      if (!res.ok) {
+        const err: { message: string } = await res.json();
+        alert(`Error: ${err.message}`);
+        return;
       }
-    } catch (e) { console.error(e); }
+
+      alert('Student deallocated.');
+      fetchAllotments();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleReallocate = async () => {
     if (!studentToMove || !moveTargetRoomId) return;
-
-    const token = localStorage.getItem('access_token');
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
 
     const formData = new FormData();
     formData.append('student_id', studentToMove.student_id);
@@ -216,24 +283,29 @@ const HostelDashboard: React.FC = () => {
     try {
       const res = await fetch(`${baseUrl}/hostel/reallocate`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: authHeader(),
         body: formData
       });
-      if (res.ok) {
-        alert("Student moved successfully.");
-        setShowMoveModal(false);
-        setStudentToMove(null);
-        setMoveTargetRoomId('');
-        fetchAllotments();
-      } else {
-        const err = await res.json();
-        alert("Error: " + err.message);
+
+      if (!res.ok) {
+        const err: { message: string } = await res.json();
+        alert(`Error: ${err.message}`);
+        return;
       }
-    } catch (e) { console.error(e); }
+
+      alert('Student moved successfully.');
+      setShowMoveModal(false);
+      setStudentToMove(null);
+      setMoveTargetRoomId('');
+      fetchAllotments();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -391,7 +463,7 @@ const HostelDashboard: React.FC = () => {
                     <div key={room.id} onClick={() => { setSelectedRoomDetails(room); setShowRoomModal(true); }} className="bg-white border hover:border-blue-400 cursor-pointer rounded-xl p-5 shadow-sm hover:shadow-md transition-all group">
                       <div className="flex justify-between items-center mb-3">
                         <h3 className="text-lg font-bold text-gray-800 group-hover:text-blue-600">Room {room.room_number}</h3>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded capitalize">{room.type}</span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded capitalize">{room.id}</span>
                       </div>
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm text-gray-600">
@@ -405,7 +477,7 @@ const HostelDashboard: React.FC = () => {
 
                       <div className="space-y-2">
                         {room.students.length > 0 ? (
-                          room.students.slice(0, 3).map((s: any, i: number) => (
+                          room.students.slice(0, 3).map((s, i: number) => (
                             <div key={i} className="flex items-center space-x-2 text-sm text-gray-700">
                               <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
                                 {s.name.charAt(0)}
@@ -509,7 +581,7 @@ const HostelDashboard: React.FC = () => {
 
                   <div className="mb-6 space-y-4">
                     {selectedRoomDetails.students.length > 0 ? (
-                      selectedRoomDetails.students.map((student: any) => (
+                      selectedRoomDetails.students.map((student) => (
                         <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">

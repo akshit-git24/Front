@@ -6,19 +6,20 @@ import TextType from '@/components/TextType';
 
 // --- React Bits Library Simulation (Consistent with HomePage) ---
 
-const Button = ({ children, className, ...props }) => (
-  <button
-    className={`px-6 py-3 font-bold rounded-lg transition-all duration-300 transform focus:outline-none focus:ring-4 ${className}`} 
-    {...props}
-  >
-    {children}
-  </button>
-);
 
-const Title = ({ as = 'h2', children, className, ...props }) => {
+type TitleProps = {
+  as?: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+} & React.HTMLAttributes<HTMLElement>;
+
+const Title = ({ as = "h2", children, className = "", ...props }: TitleProps) => {
   const Component = as;
   return (
-    <Component className={`font-extrabold font-serif tracking-tight ${className}`} {...props}>
+    <Component
+      className={`font-extrabold font-serif tracking-tight ${className}`}
+      {...props}
+    >
       {children}
     </Component>
   );
@@ -50,11 +51,11 @@ const AboutPage: React.FC = () => {
             />
             </Title>
           <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-sans">
-            We're a passionate team dedicated to simplifying the hostel experience, fostering connections, and building communities for travelers and students worldwide.
+            We❛re a passionate team dedicated to simplifying the hostel experience, fostering connections, and building communities for travelers and students worldwide.
           </p>
           <div className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-sans">
             <TextType
-            text={["Welcome to HostelNET!","Book Your Hostel Room Virtually", "Don't worry , no any first come first serve"]}
+            text={["Welcome to HostelNET!","Book Your Hostel Room Virtually", "Don❛t worry , no any first come first serve"]}
             typingSpeed={75}
             pauseDuration={1500}
             showCursor={true}
@@ -101,7 +102,7 @@ const AboutPage: React.FC = () => {
               <div className="timeline-content bg-sky-50 border-l-4 border-sky-400">
                 <time className="font-semibold text-sky-800">Today</time>
                 <h4 className="text-xl font-serif font-bold my-1 text-slate-800">Looking Ahead</h4>
-                <p className="text-slate-600 font-sans">We're continuously innovating, expanding our network, and building new tools to make hostel life better than ever.</p>
+                <p className="text-slate-600 font-sans">We❛re continuously innovating, expanding our network, and building new tools to make hostel life better than ever.</p>
               </div>
             </div>
           </div>

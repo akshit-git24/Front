@@ -4,9 +4,28 @@ import Header from '@/components/Header';
 import Footer from '@/components/footer';
 import { useRouter } from 'next/navigation';
 
+interface HostelProfile {
+  name: string;
+  hostel_id: string;
+  location: string;
+  capacity: number;
+  contact_number: string;
+  university: string;
+}
+
+interface ApplicationFormProps {
+  profile: StudentProfile;
+}
+
+interface StudentProfile {
+  name: string;
+}
+
+
+
 const StudentDashboard: React.FC = () => {
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<HostelProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,8 +80,8 @@ const StudentDashboard: React.FC = () => {
                   <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Student Profile</h2>
                   <div className="space-y-3">
                     <p><span className="font-semibold text-gray-600">Name:</span> {profile.name}</p>
-                    <p><span className="font-semibold text-gray-600">ID:</span> {profile.student_uni_id}</p>
-                    <p><span className="font-semibold text-gray-600">Email:</span> {profile.email}</p>
+                    <p><span className="font-semibold text-gray-600">ID:</span> {profile.name}</p>
+                    <p><span className="font-semibold text-gray-600">Email:</span> {profile.name}</p>
                     <p><span className="font-semibold text-gray-600">Contact:</span> {profile.contact_number}</p>
                     <p><span className="font-semibold text-gray-600">University:</span> {profile.university}</p>
                   </div>
@@ -70,20 +89,19 @@ const StudentDashboard: React.FC = () => {
 
                 <div>
                   <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Hostel Allotment</h2>
-                  {profile.hostel ? (
+                  {/* {profile.hostel ? (
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <div className="flex items-center mb-3">
                         <div className="h-10 w-10 bg-green-200 rounded-full flex items-center justify-center mr-3">
                           <svg className="w-6 h-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-green-900">{profile.hostel.name}</h3>
-                          {/* <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">{profile.hostel.hostel_id}</span> */}
+                          <h3 className="text-lg font-bold text-green-900">{profile.name}</h3>
                         </div>
                       </div>
                       <div className="space-y-2 text-sm text-green-800">
-                        <p><span className="font-semibold">Location:</span> {profile.hostel.location}</p>
-                        <p><span className="font-semibold">Contact:</span> {profile.hostel.contact_number}</p>
+                        <p><span className="font-semibold">Location:</span> {profile.name}</p>
+                        <p><span className="font-semibold">Contact:</span> {profile.name}</p>
                       </div>
                     </div>
                   ) : (
@@ -91,10 +109,10 @@ const StudentDashboard: React.FC = () => {
                       <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                       <p>No hostel allotted yet. Please contact your university administration.</p>
                     </div>
-                  )}
+                  )} */}
 
                   {/* ROOM DETAILS - NEW SECTION */}
-                  {profile.room && (
+                  {/* {profile.room && (
                     <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <h3 className="text-lg font-bold text-blue-900 mb-2">Room Details</h3>
                       <div className="space-y-2 text-sm text-blue-800">
@@ -106,7 +124,7 @@ const StudentDashboard: React.FC = () => {
 
 
                   {/* HOSTEL APPLICATION FORM */}
-                  {profile.hostel && !profile.room && (
+                  {/* {profile.hostel && !profile.room && (
                     <div className="mt-8">
                       <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Hostel Application</h2>
                       <ApplicationForm profile={profile} />
@@ -117,7 +135,7 @@ const StudentDashboard: React.FC = () => {
                     <div className="mt-8 p-4 bg-green-100 text-green-800 rounded-lg border border-green-300">
                       <p className="font-semibold">You have officially been allocated to a room. No further application is needed.</p>
                     </div>
-                  )}
+                  )} */}
 
                 </div>
               </div>
@@ -128,9 +146,9 @@ const StudentDashboard: React.FC = () => {
       <Footer />
     </div>
   );
-};
+}; 
 
-const ApplicationForm = ({ profile }: { profile: any }) => {
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ profile }) => {
   const [formData, setFormData] = useState({
     student_name: profile.name,
     roommate_preference: '',

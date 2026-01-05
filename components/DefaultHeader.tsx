@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 // --- React Bits Library Simulation (Consistent with other pages) ---
 
-const Button = ({ children, className, ...props }) => (
+const Button = ({ children, className, ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
   <button
     className={`px-5 py-2.5 font-bold rounded-lg transition-all duration-300 transform focus:outline-none focus:ring-4 ${className}`}
     {...props}
@@ -13,22 +13,7 @@ const Button = ({ children, className, ...props }) => (
   </button>
 );
 
-const Title = ({ as = 'h2', children, className, ...props }) => {
-  const Component = as;
-  return (
-    <Component className={`font-extrabold font-serif tracking-tight ${className}`} {...props}>
-      {children}
-    </Component>
-  );
-};
-// --- End of Simulation ---
 
-// --- Icon Component for Social Links ---
-const SocialIcon = ({ href, path }) => (
-  <Link href={href} className="text-slate-400 hover:text-white transition-colors">
-    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: path }} />
-  </Link>
-);
 
 interface DefaultHeaderProps {
   role?: string | null;

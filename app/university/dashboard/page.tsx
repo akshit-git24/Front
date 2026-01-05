@@ -4,24 +4,68 @@ import Header from '@/components/Header';
 import Footer from '@/components/footer';
 import { useRouter } from 'next/navigation';
 
+interface UniversityProfile {
+  name: string;
+  email: string;
+  university_id: string;
+}
+
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+  contact_number: string;
+  is_disabled: boolean;
+}
+
+
+interface Hostel {
+  id: string;
+  name: string;
+  location: string;
+  contact_number: string;
+  capacity: number;
+  owner_name: string;
+  email: string;
+}
+
 const UniversityDashboard: React.FC = () => {
-    const router = useRouter();
-    const [profile, setProfile] = React.useState<any>(null);
-    const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
 
-    // Navigation & View States
-    const [activeTab, setActiveTab] = React.useState('details');
-    const [viewMode, setViewMode] = React.useState<'list' | 'student_form' | 'hostel_form'>('list');
+  const [profile, setProfile] = React.useState<UniversityProfile | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(true);
 
-    // Form States
-    const [studentData, setStudentData] = React.useState({ name: '', email: '', contact_number: '', password: '', confirm_password: '', is_disabled: false });
-    const [hostelData, setHostelData] = React.useState({ name: '', location: '', contact_number: '', capacity: '', password: '', email: '', owner_name: '', confirm_password: '' });
-    const [formMessage, setFormMessage] = React.useState('');
-    const [formMessage1, setFormMessage1] = React.useState('');
+  // Navigation & View States
+  const [activeTab, setActiveTab] = React.useState<'details' | 'students' | 'hostels'>('details');
+  const [viewMode, setViewMode] = React.useState<'list' | 'student_form' | 'hostel_form'>('list');
 
-    // Data Lists
-    const [studentsList, setStudentsList] = React.useState<any[]>([]);
-    const [hostelsList, setHostelsList] = React.useState<any[]>([]);
+  // Form States
+  const [studentData, setStudentData] = React.useState({
+    name: '',
+    email: '',
+    contact_number: '',
+    password: '',
+    confirm_password: '',
+    is_disabled: false
+  });
+
+  const [hostelData, setHostelData] = React.useState({
+    name: '',
+    location: '',
+    contact_number: '',
+    capacity: '',
+    password: '',
+    email: '',
+    owner_name: '',
+    confirm_password: ''
+  });
+
+  const [formMessage, setFormMessage] = React.useState<string>('');
+  const [formMessage1, setFormMessage1] = React.useState<string>('');
+
+  // Data Lists
+  const [studentsList, setStudentsList] = React.useState<Student[]>([]);
+  const [hostelsList, setHostelsList] = React.useState<Hostel[]>([]);
 
     useEffect(() => {
         const token = localStorage.getItem('access_token');
@@ -249,7 +293,7 @@ const UniversityDashboard: React.FC = () => {
 
     if (loading) return <div>Loading...</div>;
 
-    if (profile && !profile.is_verified) {
+    if (profile && !profile.name) {
         return (
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans overflow-x-hidden">
                 <Header />
@@ -268,7 +312,7 @@ const UniversityDashboard: React.FC = () => {
                                     </h3>
                                     <div className="mt-2 text-sm text-yellow-700">
                                         <p>
-                                            Your university account ({profile.uni_id}) is currently pending approval.
+                                            Your university account ({profile.university_id}) is currently pending approval.
                                             You will not be able to access the dashboard features until an administrator verifies your documents.
                                         </p>
                                     </div>
@@ -293,7 +337,7 @@ const UniversityDashboard: React.FC = () => {
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h1 className="text-3xl font-serif text-green-900">University Dashboard</h1>
-                            <p className="text-gray-600">Welcome, {profile.university?.name} ({profile.uni_username})</p>
+                            <p className="text-gray-600">Welcome, {profile?.email} ({profile?.university_id})</p>
                         </div>
 
                         <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors">Logout</button>
@@ -307,12 +351,12 @@ const UniversityDashboard: React.FC = () => {
                         >
                             Details
                         </button>
-                        <button
+                        {/* <button
                             className={`py-2 px-4 font-medium transition-colors ${activeTab === 'registration' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
                             onClick={() => { setActiveTab('registration'); setViewMode('list'); setFormMessage(''); }}
                         >
                             Registration
-                        </button>
+                        </button> */}
                         <button
                             className={`py-2 px-4 font-medium transition-colors ${activeTab === 'students' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
                             onClick={() => { setActiveTab('students'); setFormMessage(''); }}
@@ -330,7 +374,7 @@ const UniversityDashboard: React.FC = () => {
                     {/* Content Area */}
                     <div className="bg-white rounded-lg shadow-md p-6">
 
-                        {/* DETAILS TAB */}
+                        
                         {activeTab === 'details' && (
                             <div>
                                 <h2 className="text-xl font-bold text-green-800 mb-4">University Details</h2>
@@ -348,12 +392,12 @@ const UniversityDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {/* REGISTRATION TAB */}
-                        {activeTab === 'registration' && viewMode === 'list' && (
+                    
+                        {/* {activeTab === 'registration' && viewMode === 'list' && (
                             <div>
                                 <h2 className="text-xl font-bold text-green-800 mb-6">Select Registration Type</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Student Registration Card */}
+                                    
                                     <div
                                         onClick={() => setViewMode('student_form')}
                                         className="cursor-pointer group p-6 rounded-xl border-2 border-gray-100 hover:border-green-500 hover:shadow-lg transition-all duration-300"
@@ -365,7 +409,7 @@ const UniversityDashboard: React.FC = () => {
                                         <p className="text-gray-500">Register new students to your university database.</p>
                                     </div>
 
-                                    {/* Hostel Registration Card */}
+                                    
                                     <div
                                         onClick={() => setViewMode('hostel_form')}
                                         className="cursor-pointer group p-6 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:shadow-lg transition-all duration-300"
@@ -380,7 +424,7 @@ const UniversityDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {/* STUDENT FORM */}
+
                         {viewMode === 'student_form' && (
                             <div className="max-w-lg mx-auto">
                                 <button onClick={() => { setViewMode('list'); setFormMessage(''); }} className="mb-4 text-sm text-gray-500 hover:text-gray-800">← Back to Options</button>
@@ -425,7 +469,7 @@ const UniversityDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {/* HOSTEL FORM */}
+                       
                         {viewMode === 'hostel_form' && (
                             <div className="max-w-lg mx-auto">
                                 <button onClick={() => { setViewMode('list'); setFormMessage(''); }} className="mb-4 text-sm text-gray-500 hover:text-gray-800">← Back to Options</button>
@@ -469,7 +513,7 @@ const UniversityDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {/* STUDENTS TAB */}
+                      
                         {activeTab === 'students' && (
                             <div>
                                 <h2 className="text-xl font-bold text-green-800 mb-6">Enrolled Students</h2>
@@ -514,7 +558,7 @@ const UniversityDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {/* HOSTELS TAB */}
+                        
                         {activeTab === 'hostels' && (
                             <div>
                                 <h2 className="text-xl font-bold text-green-800 mb-6">Hostel Facilities</h2>
@@ -537,7 +581,7 @@ const UniversityDashboard: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-                        )}
+                        )} */}
                     </div>
                 </div>
             </main>
