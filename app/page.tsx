@@ -1,10 +1,23 @@
 'use client'
 import React from 'react';
+import { useEffect } from "react";
 import Header from '@/components/Header';
 import BlurText from '@/components/BlurText';
 import Footer from '@/components/footer';
 
 const HomePage = () => {
+  useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  if (sessionStorage.getItem("services_warmed")) return;
+
+  fetch("https://hostelnet-allocationservice-1.onrender.com", {
+    method: "GET",
+  }).catch(() => {});
+
+  sessionStorage.setItem("services_warmed", "true");
+}, []);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans overflow-x-hidden relative">
       <Header />
