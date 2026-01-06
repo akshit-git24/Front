@@ -37,7 +37,7 @@ const UniversityRegisterPage: React.FC = () => {
     console.log("User Data:", UserData);
     console.log("Form Data:", formData);
     try {
-      const res = await fetch(`/auth/register`, {
+      const res = await fetch(`https://hostelnet-userservice.onrender.com/auth/register`, {
         method: 'POST',
         body: UserData,
       });
