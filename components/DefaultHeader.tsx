@@ -137,8 +137,8 @@ const DefaultHeader: React.FC<DefaultHeaderProps> = ({ role, onLogout }) => {
           <nav className="flex flex-col space-y-5 text-lg">
             <Link href="/" className="hover:text-lime-600">Home</Link>
             <Link href="/about" className="hover:text-lime-600">About</Link>
-            <Link href="/RoomieAI" className="hover:text-lime-600">About</Link>
             <Link href="/contact" className="hover:text-lime-600">Contact</Link>
+            <Link href="/RoomieAI" className="hover:text-lime-600">RoomireAI</Link>
           </nav>
 
           <div className="mt-8 pt-6 border-t space-y-4">
