@@ -1,16 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import {
-  Plus,
-  User,
-  Bot,
-  Sparkles,
-  Paperclip,
-  Mic,
   ArrowRight,
-  Share2,
-  Trash2,
   Leaf
 } from 'lucide-react';
 import Header from '@/components/Header';
@@ -21,16 +13,56 @@ interface Message {
   text: string;
   time: string;
 }
+
 const sendMessageToAI = async (message: string): Promise<string> => {
-  const res = await fetch(
-    `http://localhost:8013/roomieAI?query=${encodeURIComponent(message)}`
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-  if (!res.ok) throw new Error('AI response failed');
+  try {
+    const res = await fetch(
+      'https://hostelnet-allocationservice-1.onrender.com/roomieAI',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: message }),
+        signal: controller.signal,
+      }
+    );
 
-  const data = await res.json();
-  console.log("BACKEND RESPONSE:", data);
-  return data.response;
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errorText}`);
+    }
+
+    const contentType = res.headers.get('content-type');
+
+    if (contentType?.includes('application/json')) {
+      const data = await res.json();
+
+      // handle all reasonable backend shapes
+      return (
+        data.response ??
+        data.message ??
+        data.data?.response ??
+        JSON.stringify(data)
+      );
+    }
+
+    // fallback for plain text / streaming
+    return await res.text();
+  } catch (err: any) {
+    console.error('AI FETCH ERROR:', err);
+
+    if (err.name === 'AbortError') {
+      return 'Request timed out. Server took too long to respond.';
+    }
+
+    return err.message || 'Unexpected error occurred';
+  } finally {
+    clearTimeout(timeout);
+  }
 };
 
 const ChatPage: React.FC = () => {
@@ -39,11 +71,12 @@ const ChatPage: React.FC = () => {
       id: 1,
       role: 'bot',
       text: 'Hello! I am RoomieAI. How can I help you today?',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
   ]);
 
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,40 +87,30 @@ const ChatPage: React.FC = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || loading) return;
 
     const userMsg: Message = {
       id: Date.now(),
       role: 'user',
       text: inputText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    setLoading(true);
 
-    try {
-      const aiReply = await sendMessageToAI(userMsg.text);
+    const aiReply = await sendMessageToAI(userMsg.text);
 
-      const botMsg: Message = {
-        id: Date.now() + 1,
-        role: 'bot',
-        text: aiReply,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+    const botMsg: Message = {
+      id: Date.now() + 1,
+      role: 'bot',
+      text: aiReply,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
 
-      setMessages(prev => [...prev, botMsg]);
-    } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + 2,
-          role: 'bot',
-          text: 'Something went wrong. Please try again.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-    }
+    setMessages(prev => [...prev, botMsg]);
+    setLoading(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -151,7 +174,7 @@ const ChatPage: React.FC = () => {
             />
             <button
               onClick={handleSend}
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || loading}
               className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40"
             >
               <ArrowRight />

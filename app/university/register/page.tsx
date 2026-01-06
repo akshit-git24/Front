@@ -37,10 +37,7 @@ const UniversityRegisterPage: React.FC = () => {
     console.log("User Data:", UserData);
     console.log("Form Data:", formData);
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8010';
-
-      const res = await fetch(`${baseUrl}/auth/register`, {
+      const res = await fetch(`/auth/register`, {
         method: 'POST',
         body: UserData,
       });
@@ -53,7 +50,7 @@ const UniversityRegisterPage: React.FC = () => {
         setMessage(`Error: ${data.detail || 'Registration failed.'}`);
       }
 
-        const response = await fetch(`${baseUrl}/university/register`, {
+        const response = await fetch(`https://hostelnet-allocationservice-1.onrender.com/university/register`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${data.access_token}`, // Add Token
